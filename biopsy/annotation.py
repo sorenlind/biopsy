@@ -44,7 +44,12 @@ class Annotation:
         max_x = max(xs)
         min_y = min(ys)
         max_y = max(ys)
-        return (min_x, min_y), (max_x - min_x, max_y - min_y)
+        # Add a margin to make sure floodfilling one of the corners will fill the
+        # entire area outside the segment.
+        margin = 2 ** 4
+        location = (min_x - (margin // 2), min_y - (margin // 2))
+        size = (max_x - min_x + margin, max_y - min_y + margin)
+        return location, size
 
     def overlap(
         self, other_location: Tuple[int, int], other_size: Tuple[int, int]
@@ -123,16 +128,29 @@ class Annotation:
             for x, y in self._pixel_points
         ]
         render_size = (self.size[0] // downsample, self.size[1] // downsample)
-        temp_image = Image.new("RGBA", render_size, color=(0, 0, 0, 0),)
+        # Create new black image with full transparency (alpha = 0)
+        temp_image = Image.new(
+            "RGBA",
+            render_size,
+            color=(0, 0, 0, 0),
+        )
+
+        # Draw the segment with a black line with full opacity (alpha = 255)
         x_prev, y_prev = points_box_relative[-1]
-        draw_temp = ImageDraw.Draw(temp_image, "RGBA")
+        draw: ImageDraw.ImageDraw = ImageDraw.Draw(temp_image, "RGBA")  # type: ignore
         for (x, y) in points_box_relative:
-            draw_temp.line((x_prev, y_prev, x, y), fill=(0, 0, 0, 255), width=2)
+            draw.line((x_prev, y_prev, x, y), fill=(0, 0, 0, 255), width=2)
             x_prev, y_prev = x, y
 
-        ImageDraw.floodfill(
-            temp_image, (render_size[0] / 2, render_size[1] / 2), (0, 0, 0, 255)
-        )
+        # Flood fill the area outside the segment with black, full opacity (alpha = 255)
+        ImageDraw.floodfill(temp_image, (0, 0), (0, 0, 0, 255), None)
+
+        # The segment is now a "hole" in the image. To fix this, we invert the alpha
+        # channel. One may as why we didn't just initially create a black image and
+        # floodfilled using transparent paint. Unfortunately that does not seem to work.
+        r, g, b, a = temp_image.split()
+        temp_image = Image.merge(temp_image.mode, (r, g, b, a.point(lambda i: 255 - i)))
+
         return temp_image
 
     def __repr__(self) -> str:
