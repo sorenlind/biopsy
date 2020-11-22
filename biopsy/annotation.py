@@ -146,7 +146,7 @@ class Annotation:
         ImageDraw.floodfill(temp_image, (0, 0), (0, 0, 0, 255), None)
 
         # The segment is now a "hole" in the image. To fix this, we invert the alpha
-        # channel. One may as why we didn't just initially create a black image and
+        # channel. One may say, why we didn't just initially create a black image and
         # floodfilled using transparent paint. Unfortunately that does not seem to work.
         r, g, b, a = temp_image.split()
         temp_image = Image.merge(temp_image.mode, (r, g, b, a.point(lambda i: 255 - i)))
