@@ -70,7 +70,7 @@ class AnnotatedSlide:
         Args:
             level (int): Zoom level
             tile_size (int): The height and width of the tiles in pixels.
-            overlap (float): The fraction of overlap between each slide.
+            overlap (float): The fraction of overlap between each tile.
             rotate (bool): A value indicating whether to create augmentations by
                 rotating the tiles.
 
