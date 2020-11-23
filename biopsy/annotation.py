@@ -45,7 +45,7 @@ class Annotation:
         min_y = min(ys)
         max_y = max(ys)
         # Add a margin to make sure floodfilling one of the corners will fill the
-        # entire area outside the segment.
+        # entire area outside the mask.
         margin = 2 ** 4
         location = (min_x - (margin // 2), min_y - (margin // 2))
         size = (max_x - min_x + margin, max_y - min_y + margin)
@@ -135,17 +135,17 @@ class Annotation:
             color=(0, 0, 0, 0),
         )
 
-        # Draw the segment with a black line with full opacity (alpha = 255)
+        # Draw the mask with a black line with full opacity (alpha = 255)
         x_prev, y_prev = points_box_relative[-1]
         draw: ImageDraw.ImageDraw = ImageDraw.Draw(temp_image, "RGBA")  # type: ignore
         for (x, y) in points_box_relative:
             draw.line((x_prev, y_prev, x, y), fill=(0, 0, 0, 255), width=2)
             x_prev, y_prev = x, y
 
-        # Flood fill the area outside the segment with black, full opacity (alpha = 255)
+        # Flood fill the area outside the mask with black, full opacity (alpha = 255)
         ImageDraw.floodfill(temp_image, (0, 0), (0, 0, 0, 255), None)
 
-        # The segment is now a "hole" in the image. To fix this, we invert the alpha
+        # The mask is now a "hole" in the image. To fix this, we invert the alpha
         # channel. One may say, why we didn't just initially create a black image and
         # floodfilled using transparent paint. Unfortunately that does not seem to work.
         r, g, b, a = temp_image.split()
@@ -195,7 +195,7 @@ class AnnotationCollection:
         if size[0] != size[1]:
             raise NotImplementedError("Non-square regions not implemented.")
 
-        segment_area = Image.new(mode="RGBA", size=size, color=(0, 0, 0, 0))
+        combined_mask = Image.new(mode="RGBA", size=size, color=(0, 0, 0, 0))
 
         downsample = 2 ** level
         size_level_0 = (size[0] * downsample, size[1] * downsample)
@@ -203,10 +203,10 @@ class AnnotationCollection:
         for annotation in self._annotations:
             if not annotation.overlap(location, size_level_0):
                 continue
-            annotation_segment = annotation.render_region(location, level, size)
-            segment_area.paste(annotation_segment, (0, 0), annotation_segment)
-        segment_area = segment_area.convert("LA")
-        return segment_area
+            annotation_mask = annotation.render_region(location, level, size)
+            combined_mask.paste(annotation_mask, (0, 0), annotation_mask)
+        combined_mask = combined_mask.convert("LA")
+        return combined_mask
 
 
 class AnnotationParser:

@@ -50,7 +50,7 @@ class AnnotatedSlide:
 
         Returns:
             Tuple[Image.Image, Image.Image]:  A tuple consisting of the slide region and
-                annotation region images.
+                mask images.
         """
         slide_region = self._slide.read_region(location, level, size).convert("RGB")
 
@@ -59,8 +59,8 @@ class AnnotatedSlide:
         if downsample != int(self._slide.properties[key]):
             raise ValueError("Unexpected level downsample value")
 
-        segment_region = self._annotations.render_region(location, level, size)
-        return slide_region, segment_region
+        mask_region = self._annotations.render_region(location, level, size)
+        return slide_region, mask_region
 
     def build_tiles(
         self, level: int, tile_size: int, overlap: float, rotate: bool
