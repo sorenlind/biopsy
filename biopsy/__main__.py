@@ -109,8 +109,7 @@ def _preprocess_parser(subparsers: argparse._SubParsersAction) -> ArgumentParser
 def _preprocess(_, args: argparse.Namespace):
     from .preprocessing import preprocess
 
-    if not args.OUTPUT_FOLDER.is_dir():
-        raise FileNotFoundError("Output folder does not exist.")
+    args.OUTPUT_FOLDER.mkdir(exist_ok=True)
 
     preprocess(
         args.INPUT_FOLDER,
